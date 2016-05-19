@@ -45,7 +45,7 @@ class ResolutionRulesPlugin implements Plugin<Project> {
         configuration = project.configurations.create(CONFIGURATION_NAME)
         extension = project.extensions.create('nebulaResolutionRules', NebulaResolutionRulesExtension)
 
-        project.configurations.all ( { Configuration config ->
+        project.configurations.all({ Configuration config ->
             if (config.name == CONFIGURATION_NAME || config.name == 'versionManagement') {
                 return
             }
@@ -54,21 +54,28 @@ class ResolutionRulesPlugin implements Plugin<Project> {
                 return
             }
 
-            config.incoming.beforeResolve {
-                config.resolutionStrategy { ResolutionStrategy rs ->
-                    def resolutionRules = getRules()
-                    resolutionRules.configurationRules().each { ConfigurationRule rule ->
-                        rule.apply(config)
-                    }
-                    resolutionRules.resolutionRules().each { ResolutionRule rule ->
-                        rule.apply(rs)
-                    }
-                    resolutionRules.projectConfigurationRules().each { ProjectConfigurationRule rule ->
-                        rule.apply(project, rs, config, extension)
+            config.defaultDependencies {
+                throw new IllegalArgumentException("")
+            }
+
+            def extension = extension
+            config.defaultDependencies {
+                if (config.state == Configuration.State.UNRESOLVED) {
+                    config.resolutionStrategy { ResolutionStrategy rs ->
+                        def resolutionRules = getRules()
+                        resolutionRules.configurationRules().each { ConfigurationRule rule ->
+                            rule.apply(config)
+                        }
+                        resolutionRules.resolutionRules().each { ResolutionRule rule ->
+                            rule.apply(rs)
+                        }
+                        resolutionRules.projectConfigurationRules().each { ProjectConfigurationRule rule ->
+                            rule.apply(project, rs, config, extension)
+                        }
                     }
                 }
             }
-        } )
+        })
     }
 
     Rules getRules() {
